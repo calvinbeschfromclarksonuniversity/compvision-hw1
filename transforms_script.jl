@@ -3,38 +3,36 @@ Pkg.add(["Images", "FileIO", "ImageMagick", "ImageIO", "Plots"])
 using Images, FileIO, ImageMagick, ImageIO, Plots
 
 
-img = load("image3.jpg");
-
 function transform_image(input_image, transform_matrix, transform_type)
-  in_dims = collect(size(input_image));
-  out_dims = transform_matrix * in_dims;
+  result_size = transform_matrix * [size(input_image, 1), size(input_image, 2), 1];
+  result = rand(RGB{N0f8}, abs(result_size[1]), abs(result_size[2]));
 
-  if transform_type == "scale" 
-    result = rand(RGB{N0f8}, out_dims[1], out_dims[2]);
-  else 
-    result = rand(RGB{N0f8}, out_dims[1], out_dims[2], out_dims[3]);
-  end
-
-  if transform_type == "scale"
-    inverse = inv(transform_matrix);
-  end
-
-  size(result)
+  inverse = inv(transform_matrix); #CHANGE THIS
 
   for i = 1:size(result, 1)
     for j = 1:size(result, 2)
-      orig = inverse * [i, j];
-      orig = [ceil(a) for a in orig];
-      orig = Int.(orig);
-      result(i, j) = input_image(orig[0], orig[1]);
+      sample_pos = inverse * [i, j, 1];
+      sample_pos = sample_pos / sample_pos[3];
+      sample_pos = [abs(ceil(a)) for a in sample_pos];
+      sample_pos = Int.(sample_pos);
+      result[i, j] = input_image[sample_pos[1], sample_pos[2]];
     end
   end
 
   result
 end
 
-scale = [2 0; 0 2];
+img = load("image3.jpg");
 
-timg = transform_image(img, scale, "scale")
-plt = plot(timg);
-display(plt);
+plt = plot(img);
+
+scale = [2 0 0; 0 2 0; 0 0 1];
+scaled = transform_image(img, scale, "scale");
+
+reflect = [1 0 0; 0 -1 0; 0 0 1];
+reflected = transform_image(img, reflect, "reflect");
+
+scaled_plt = plot(scaled);
+reflected_plt = plot(reflected);
+plt_fin = plot(plt, scaled_plt, reflected_plt, layout=(3, 1), legend=true);
+display(plt_fin);
