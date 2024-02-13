@@ -16,12 +16,16 @@ Function to transform an image.
 The transformed image on a plot (no standard output).
 """
 function transform_image(input_image, transform_matrix, transform_type)
-  #result_boundary = transform_matrix * [size(input_image, 1), size(input_image, 2), 1];
-  #result = rand(RGB{N0f8}, abs(result_size[1]), abs(result_size[2]));
+  #=
+  swapper = copy(transform_matrix);
+  for i in 1:size(transform_matrix)[1]
+    transform_matrix[i, 1] = swapper[i, 2];
+    transform_matrix[i, 2] = swapper[i, 1];
+  end
+  =#
 
   #create an initial array of the coordinates of the image's four corners
   corners = Array[[0, 0, 1], [size(input_image, 1), 0, 1], [0, size(input_image, 2), 1], [size(input_image, 1), size(input_image, 2), 1]];
-  println(corners)
 # ?transform_image;
 
   #Transform the corners 
@@ -29,6 +33,7 @@ function transform_image(input_image, transform_matrix, transform_type)
 
   for i = 1:4
     corners[i] = transform_matrix * corners[i];
+    corners[i] = corners[i] / corners[i][3];
   end
 
   println(String("Translated corners: $(corners)"));
@@ -88,7 +93,8 @@ function transform_image(input_image, transform_matrix, transform_type)
 =#
   for i = 1:size(result)[1]
     for j = 1:size(result)[2]
-      sample_pos = inverse * inv(display_translation) * [i, j, 1];
+      sample_pos = inv(display_translation) * [i, j, 1];
+      sample_pos = inverse * sample_pos;
 
       if sample_pos[3] == 0
         sample_pos[3] = 1;
@@ -115,60 +121,61 @@ img2 = load("image2.png");
 
 # The scale matrix and function calls for question 1
 scale = [3.67346939 0 0; 0 11.2941176 0; 0 0 1];
-scaled = transform_image(img, scale, "scale");
-#scaled1 = transform_image(img1, scale, "scale");
+#scaled = transform_image(img, scale, "scale");
+scaled1 = transform_image(img1, scale, "scale");
 #scaled2 = transform_image(img2, scale, "scale");
 
 #The reflection matrix and function calls for question 2
 reflect = [-1 0 0; 0 1 0; 0 0 1];
-reflected = transform_image(img, reflect, "reflect");
-#reflected1 = transform_image(img1, reflect, "reflect");
+#reflected = transform_image(img, reflect, "reflect");
+reflected1 = transform_image(img1, reflect, "reflect");
 #reflected2 = transform_image(img2, reflect, "reflect");
 
 #The rotation matrix and function calls for question 3
 rotate = [cos(deg2rad(-30)) -sin(deg2rad(-30)) 0; sin(deg2rad(-30)) cos(deg2rad(-30)) 0; 0 0 1];
-rotated = transform_image(img, rotate, "rotate");
-#rotated1 = transform_image(img1, rotate, "rotate");
+#rotated = transform_image(img, rotate, "rotate");
+rotated1 = transform_image(img1, rotate, "rotate");
 #rotated2 = transform_image(img2, rotate, "rotate");
 
 #The Shear matrix and function calls for question 4
-shear = [1 0.5 0; 0 1 0; 0 0 1];
-sheared = transform_image(img, shear, "shear");
-#sheared1 = transform_image(img1, shear, "shear");
+shear = [1 0 0; 0.5 1 0; 0 0 1];
+#sheared = transform_image(img, shear, "shear");
+sheared1 = transform_image(img1, shear, "shear");
 #sheared2 = transform_image(img2, shear, "shear");
 
 #The scale, rotate, and translate matricies, followed by the function calls for question 5
 scale_half = [0.5 0 0; 0 0.5 0; 0 0 1];
 rotate20 = [cos(deg2rad(20)) -sin(deg2rad(20)) 0; sin(deg2rad(20)) cos(deg2rad(20)) 0; 0 0 1]
 translate = [1 0 300; 0 1 500; 0 0 1];
-fived = transform_image(transform_image(transform_image(img, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
-#fived1 = transform_image(transform_image(transform_image(img1, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
+#fived = transform_image(transform_image(transform_image(img, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
+fived1 = transform_image(transform_image(transform_image(img1, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
 #fived2 = transform_image(transform_image(transform_image(img2, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
 
 #The first affline matrix and function calls
 affine_1 = [1 .4 .4; .1 1 .3; 0 0 1];
-affine_1d = transform_image(img, affine_1, "affine");
-#affine_1_1d = transform_image(img1, affine_1, "affine");
+#affine_1d = transform_image(img, affine_1, "affine");
+affine_1_1d = transform_image(img1, affine_1, "affine");
 #affine_1_2d = transform_image(img2, affine_1, "affine");
 
 #The second affline matrix and function calls
 affine_2 = [2.1 -.35 -.1; -.3 .7 .3; 0 0 1];
-affine_2d = transform_image(img, affine_2, "affine");
-#affine_2_1d = transform_image(img1, affine_2, "affine");
+#affine_2d = transform_image(img, affine_2, "affine");
+affine_2_1d = transform_image(img1, affine_2, "affine");
 #affine_2_2d = transform_image(img2, affine_2, "affine");
 
 #The first homography matrix and function calls
 homography_1 = [.8 .2 .3; -.1 .9 -.1; .0005 -.0005 1];
-homography_1d = transform_image(img, homography_1, "homography");
-#homography_1_1d = transform_image(img1, homography_1, "homography");
+#homography_1d = transform_image(img, homography_1, "homography");
+homography_1_1d = transform_image(img1, homography_1, "homography");
 #homography_1_2d = transform_image(img2, homography_1, "homography");
 
 #The second homography matrix and function calls
 homography_2 = [29.25 13.95 20.25; 4.95 35.55 9.45; 0.045 0.09 45.0];
-homography_2d = transform_image(img, homography_2, "homography");
-#homography_2_1d = transform_image(img1, homography_2, "homography");
+#homography_2d = transform_image(img, homography_2, "homography");
+homography_2_1d = transform_image(img1, homography_2, "homography");
 #homography_2_2d = transform_image(img2, homography_2, "homography");
 
+#=
 #Creating plots for image 1
 scaled_plt = plot(scaled);
 reflected_plt = plot(reflected);
@@ -179,7 +186,7 @@ affine_1d_plt = plot(affine_1d);
 affine_2d_plt = plot(affine_2d);
 homography_1d_plt = plot(homography_1d);
 homography_2d_plt = plot(homography_2d);
-#=
+=#
 #Creating plots for image 2
 scaled1_plt = plot(scaled1);
 reflected1_plt = plot(reflected1);
@@ -190,7 +197,7 @@ affine_1_1d_plt = plot(affine_1_1d);
 affine_2_1d_plt = plot(affine_2_1d);
 homography_1_1d_plt = plot(homography_1_1d);
 homography_2_1d_plt = plot(homography_2_1d);
-
+#=
 #creating plots for image 3
 scaled2_plt = plot(scaled2);
 reflected2_plt = plot(reflected2);
@@ -203,12 +210,12 @@ homography_1_2d_plt = plot(homography_1_2d);
 homography_2_2d_plt = plot(homography_2_2d);
 =#
 #Displaying the image 1 plot
-plt_fin = plot(scaled_plt, reflected_plt, rotated_plt, sheared_plt, fived_plt, affine_1d_plt, affine_2d_plt, homography_1d_plt, homography_2d_plt, layout=(3, 3), legend=true);
-display(plt_fin);
+#plt_fin = plot(scaled_plt, reflected_plt, rotated_plt, sheared_plt, fived_plt, affine_1d_plt, affine_2d_plt, homography_1d_plt, homography_2d_plt, layout=(3, 3), legend=true);
+#display(plt_fin);
 
 #Displaying the image 2 plot
-#plt_fin1 = plot(scaled1_plt, reflected1_plt, rotated1_plt, sheared1_plt1, fived1_plt, affine_1_1d_plt, affine_2_1d_plt, homography_1_1d_plt, homography_2_1d_plt, layout=(3, 3), legend=true);
-#display(plt_fin1);
+plt_fin1 = plot(scaled1_plt, reflected1_plt, rotated1_plt, sheared1_plt, fived1_plt, affine_1_1d_plt, affine_2_1d_plt, homography_1_1d_plt, homography_2_1d_plt, layout=(3, 3), legend=true);
+display(plt_fin1);
 
 #Displaying the image 3 plot 
 #plt_fin2 = plot(scaled2_plt, reflected2_plt, rotated2_plt, sheared2_plt1, fived2_plt, affine_1_2d_plt, affine_2_2d_plt, homography_1_1d_plt, homography_2_1d_plt, layout=(3, 3), legend=true);
@@ -219,4 +226,4 @@ rotate = [cos(deg2rad(3)) -sin(deg2rad(3)) 0; sin(deg2rad(3)) cos(deg2rad(3)) 0;
 rotated = transform_image(img, rotate, "rotate");
 plt = plot(rotated);
 display(plt);
-={}
+=#
