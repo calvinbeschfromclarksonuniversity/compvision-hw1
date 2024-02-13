@@ -12,6 +12,9 @@ function transform_image(input_image, transform_matrix, transform_type)
   println(corners)
 
   #Transform the corners 
+  corners = Array[[0, 0, 1], [size(input_image, 1), 0, 1], [0, size(input_image, 2), 1], [size(input_image, 1), size(input_image, 2), 1]];
+  println(corners)
+
   for i = 1:4
     corners[i] = transform_matrix * corners[i];
   end
