@@ -26,31 +26,42 @@ function transform_image(input_image, transform_matrix, transform_type)
   display_translation = [1 0 -xmin; 0 1 -ymin; 0 0 1];
 
   println(xmin)
-  println(xmax)
   println(ymin)
-  println(ymax)
-  println("")
   println(display_translation)
+  println(display_size)
 
   result = rand(RGB{N0f8}, round(Int, floor(display_size[1])), round(Int, floor(display_size[2]))); 
   
-
-  inverse = inv(transform_matrix); #CHANGE THIS
+  if transform_type == translate
+    transform_matrix[1,3] *= -1
+    transform_matrix[2,3] *= -1
+    inverse = transform_matrix
+  elseif transform_type == rotate
+    transform_matrix[1,2] *= -1
+    transform_matrix[2,1] *= -1
+    inverse = transform_matrix
+  elseif transform_type == reflect
+    inverse = transform_matrix
+  elseif transform_type == shear
+    transform_matrix[1,2] *= -1
+    transform_matrix[2,1] *= -1
+    inverse = transform_matrix
+  else
+  inverse = inv(transform_matrix); 
+  end
 
   for i = 1:size(result, 1)
     for j = 1:size(result, 2)
       sample_pos = inverse * [i, j, 1];
-      println(sample_pos)
-      sample_pos = sample_pos / sample_pos[3];
-      println(sample_pos)
+      if sample_pos[3] == 0
+        sample_pos[3] = .00001;
+      end
       sample_pos = display_translation * sample_pos;
-      println(sample_pos)
+      sample_pos = sample_pos / sample_pos[3];
       if sample_pos[1] <= 0 || sample_pos[1] > size(input_image, 1) || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
         result[i, j] = RGB(0, 0, 0);
       else
         sample_pos = [(ceil(a)) for a in sample_pos];
-        println(sample_pos);
-        println(" ")
         sample_pos = Int.(sample_pos);
         result[i, j] = input_image[sample_pos[1], sample_pos[2]];
       end
@@ -62,15 +73,14 @@ end
 
 img = load("image3.jpg");
 
-plt = plot(img);
-
+#=
 scale = [2 0 0; 0 2 0; 0 0 1];
 scaled = transform_image(img, scale, "scale");
 
 reflect = [-1 0 0; 0 1 0; 0 0 1];
 reflected = transform_image(img, reflect, "reflect");
 
-rotate = [cos(deg2rad(30)) -sin(deg2rad(30)) 0; sin(deg2rad(30)) cos(deg2rad(30)) 0; 0 0 1];
+rotate = [cos(deg2rad(-30)) -sin(deg2rad(-30)) 0; sin(deg2rad(-30)) cos(deg2rad(-30)) 0; 0 0 1];
 rotated = transform_image(img, rotate, "rotate");
 
 shear = [1 0.5 0; 0 1 0; 0 0 1];
@@ -99,10 +109,17 @@ reflected_plt = plot(reflected);
 rotated_plt = plot(rotated);
 sheared_plt = plot(sheared);
 fived_plt = plot(fived);
-affine_1d_plt = plot(affine_1d_plt);
-affine_2d_plt = plot(affine_2d_plt);
+affine_1d_plt = plot(affine_1d);
+affine_2d_plt = plot(affine_2d);
 homography_1d_plt = plot(homography_1d);
-homography_2d_plt = plot(homograpdy_2d);
+homography_2d_plt = plot(homography_2d);
 
-plt_fin = plot(plt, scaled_plt, reflected_plt, rotated_plt, sheared_plt, fived_plt, affine_1d_plt, affine_2d_plt, homograpdy_1d_plt, homography_2d_plt, layout=(3, 3), legend=true);
+plt_fin = plot(scaled_plt, reflected_plt, rotated_plt, sheared_plt, fived_plt, affine_1d_plt, affine_2d_plt, homography_1d_plt, homography_2d_plt, layout=(3, 3), legend=true);
 display(plt_fin);
+=#
+
+rotate = [cos(deg2rad(-30)) -sin(deg2rad(-30)) 0; sin(deg2rad(-30)) cos(deg2rad(-30)) 0; 0 0 1];
+rotated = transform_image(img, rotate, "rotate");
+plt = plot(rotated);
+display(plt);
+
