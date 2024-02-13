@@ -40,12 +40,17 @@ function transform_image(input_image, transform_matrix, transform_type)
   for i = 1:size(result, 1)
     for j = 1:size(result, 2)
       sample_pos = inverse * [i, j, 1];
+      println(sample_pos)
       sample_pos = sample_pos / sample_pos[3];
+      println(sample_pos)
       sample_pos = display_translation * sample_pos;
+      println(sample_pos)
       if sample_pos[1] <= 0 || sample_pos[1] > size(input_image, 1) || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
         result[i, j] = RGB(0, 0, 0);
       else
         sample_pos = [(ceil(a)) for a in sample_pos];
+        println(sample_pos);
+        println(" ")
         sample_pos = Int.(sample_pos);
         result[i, j] = input_image[sample_pos[1], sample_pos[2]];
       end
