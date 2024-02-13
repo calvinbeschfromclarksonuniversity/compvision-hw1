@@ -1,8 +1,20 @@
 import Pkg
-Pkg.add(["Images", "FileIO", "ImageMagick", "ImageIO", "Plots"])
-using Images, FileIO, ImageMagick, ImageIO, Plots
+Pkg.add(["Images", "FileIO", "ImageMagick", "ImageIO", "Plots", "Markdown"])
+using Images, FileIO, ImageMagick, ImageIO, Plots, Markdown
 
+"""
+transform_image(input_image, transform_matrix, transform_type)
 
+Function to transform an image. 
+
+# Arguments
+- `input_image`: The image being transformed of type jpg or png.
+- `transform_matrix`: The matrix contianing the transformation.
+- `transform_type`: A string representing the type of transformation (translation, scale, rotate... etc).
+
+# Returns
+The transformed image on a plot (no standard output).
+"""
 function transform_image(input_image, transform_matrix, transform_type)
   #result_boundary = transform_matrix * [size(input_image, 1), size(input_image, 2), 1];
   #result = rand(RGB{N0f8}, abs(result_size[1]), abs(result_size[2]));
@@ -10,6 +22,7 @@ function transform_image(input_image, transform_matrix, transform_type)
   #create an initial array of the coordinates of the image's four corners
   corners = Array[[0, 0, 1], [size(input_image, 1), 0, 1], [0, size(input_image, 2), 1], [size(input_image, 1), size(input_image, 2), 1]];
   println(corners)
+?transform_image;
 
   #Transform the corners 
   corners = Array[[0, 0, 1], [size(input_image, 1), 0, 1], [0, size(input_image, 2), 1], [size(input_image, 1), size(input_image, 2), 1]];
