@@ -2,7 +2,19 @@ import Pkg
 Pkg.add(["Images", "FileIO", "ImageMagick", "ImageIO", "Plots", "Markdown", "Interpolations"])
 using Images, FileIO, ImageMagick, ImageIO, Plots, Markdown, Interpolations
 
+"""
+bilinear_interpolate(image::Array{RGB{N0f8}, 2}, pos::Vector{Float64})
 
+Performs bilinear interpolation on the given image at the given coordinates.
+Returns appropriate pixel color value.
+
+Arguments:
+- `image`: The source image to interpolate.
+- `pos`: The position at which to interpolate.
+
+Returns: A pixel color object interpolated from the source image at the given coordinates.
+
+"""
 function bilinear_interpolate(image::Array{RGB{N0f8}, 2}, pos::Vector{Float64});
   pos = pos .- 0.5;
   pixels_pos = [[floor(pos[1]) ceil(pos[2])], [ceil(pos[1]) ceil(pos[2])], [floor(pos[1]) floor(pos[2])], [ceil(pos[1]) floor(pos[2])]];
@@ -41,59 +53,48 @@ Function to transform an image.
 - `transform_type`: A string representing the type of transformation (translation, scale, rotate... etc).
 
 # Returns
-The transformed image on a plot (no standard output).
+The transformed image.
 """
 function transform_image(input_image, transform_matrix, transform_type)
   
+  # transformation matrices can't be mutated if they're to be used again to the same effect
   trans_matrix = deepcopy(transform_matrix);
   swapper = deepcopy(trans_matrix);
-  #=
-  trans_matrix[:, 1] = swapper[:, 2];
-  trans_matrix[:, 2] = swapper[:, 1];
-  trans_matrix = [-1 0 0; 0 -1 0; 0 0 1] * trans_matrix; =#
 
-  #trans_matrix = transpose(trans_matrix);
-
+  #switch x and y in matrices to account for julia's [y, x] representation of image coordinates
   trans_matrix[1, 2] = swapper[2, 1];
   trans_matrix[2, 1] = swapper[1, 2];
-
   trans_matrix[1, 3] = swapper[2, 3];
   trans_matrix[2, 3] = swapper[1, 3];
-
   trans_matrix[3, 1] = swapper[3, 2];
   trans_matrix[3, 2] = swapper[3, 1];
-  
   trans_matrix[1, 1] = swapper[2, 2];
   trans_matrix[2, 2] = swapper[1, 1];
 
-  println(String("Swapped $(transform_type) transformation matrix: $(trans_matrix)"));
-  
-
-  #create an initial array of the coordinates of the image's four corners
+  # create an initial array of the coordinates of the image's four corners
   corners = Array[[0, 0, 1], [size(input_image, 1), 0, 1], [0, size(input_image, 2), 1], [size(input_image, 1), size(input_image, 2), 1]];
-
+  
+  # find the transformed position of each corner
   for i = 1:4
     corners[i] = trans_matrix * corners[i];
     corners[i] = corners[i] / corners[i][3];
   end
 
-  println(String("Translated corners: $(corners)"));
-
-  #get rectangular boundaries of result
-  
+  # get rectangular boundaries of result (image must be rectangular)
   xmin = minimum(p[1] for p in corners);
   xmax = maximum(p[1] for p in corners);
   ymin = minimum(p[2] for p in corners);
   ymax = maximum(p[2] for p in corners);
-
+  
+  # construct datastructure for transformed image
   display_size = [xmax - xmin, ymax - ymin];
-  display_translation = [1 0 -xmin; 0 1 -ymin; 0 0 1];
-
-  println(String("Display translation: $(display_translation)"));
-
   result = rand(RGB{N0f8}, round(Int, floor(display_size[1])), round(Int, floor(display_size[2]))); 
 
-   #= inverse = trans_matrix;
+  # translation to the origin - picture files start at (0, 0) and contain no negatives
+  display_translation = [1 0 -xmin; 0 1 -ymin; 0 0 1];
+
+  # calculate inverse through required methods
+  inverse = trans_matrix;
   if transform_type == "translate"
     trans_matrix[1,3] *= -1
     trans_matrix[2,3] *= -1
@@ -110,10 +111,12 @@ function transform_image(input_image, transform_matrix, transform_type)
     inverse = trans_matrix
   else
   inverse = inv(trans_matrix); 
-  end =#
+  end
   
-  inverse = inv(trans_matrix);
-
+  # For every pixel in the new image that needs to be filled,
+  # calculate its position on the plane of the original translated
+  # image from its pixel position, and use that to sample a color
+  # from the original image (using bilinear interpolation)
   for i = 1:size(result)[1]
     for j = 1:size(result)[2]
       sample_pos = inv(display_translation) * [i, j, 1];
@@ -127,35 +130,10 @@ function transform_image(input_image, transform_matrix, transform_type)
       if sample_pos[1] <= 0 || sample_pos[1] > size(input_image, 1) || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
         result[i, j] = RGB(0, 0, 0);
       else
-        sample_pos = [ceil(a) for a in sample_pos];
-        sample_pos = Int.(sample_pos);
-        result[i, j] = input_image[sample_pos[1], sample_pos[2]];
-        #result[i, j] = bilinear_interpolate(input_image, [sample_pos[1], sample_pos[2]]);
+        result[i, j] = bilinear_interpolate(input_image, [sample_pos[1], sample_pos[2]]);
       end
     end
   end
-  #=
-  for i = 1:size(result)[1]
-    for j = 1:size(result)[2]
-      sample_pos = inv(display_translation) * [i, j, 1];
-      sample_pos = inverse * sample_pos;
-
-      if sample_pos[3] == 0
-        sample_pos[3] = 1;
-      end
-      sample_pos = sample_pos / sample_pos[3];
-
-      if sample_pos[1] <= 0 || sample_pos[1] > size(input_image)[1] || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
-        result[i, j] = RGB(0, 0, 0);
-      else
-        #result[i, j] = bilinear_interpolate(input_image, sample_pos);
-
-        sample_pos = [ceil(x) for x in sample_pos];
-        sample_pos = Int.(sample_pos);
-        result[i, j] = input_image[sample_pos[1], sample_pos[2]];
-      end
-    end
-  end =#
 
   result
 end
@@ -164,6 +142,7 @@ meech = load("image3.jpg");
 plant = load("image1.png");
 room = load("image2.png");
 
+# create transformation matrices
 scale_meech = [1920/size(meech)[2] 0 0; 0 1080/size(meech)[1] 0; 0 0 1];
 scale_plant = [1920/size(plant)[2] 0 0; 0 1080/size(plant)[1] 0; 0 0 1];
 scale_room = [1920/size(room)[2] 0 0; 0 1080/size(room)[1] 0; 0 0 1];
@@ -178,19 +157,7 @@ affine_2 = [2.1 -.35 -.1; -.3 .7 .3; 0 0 1];
 homography_1 = [.8 .2 .3; -.1 .9 -.1; .0005 -.0005 1];
 homography_2 = [29.25 13.95 20.25; 4.95 35.55 9.45; 0.045 0.09 45.0];
 
-#=
-t = transform_image(plant, shear, "shear");
-pltt = plot(t);
-g = transform_image(plant, shear, "shear");
-plttt = plot(g);
-n = transform_image(plant, shear, "shear");
-pltttt = plot(n);
-c = transform_image(plant, shear, "shear");
-plttttt = plot(c);
-pl = (pltt, plttt, pltttt, plttttt, format=(2, 2), legend=false);
-display(pl);
-=#
-
+# transform the images and save each as an image file
 save("meech1.png", transform_image(meech, scale_meech, "scale"));
 save("meech2.png", transform_image(meech, reflect, "reflect"));
 save("meech3.png", transform_image(meech, rotate30, "rotate"));
@@ -222,118 +189,3 @@ save("room7-1.png", transform_image(room, homography_1, "homography"));
 save("room7-2.png", transform_image(room, homography_2, "homography"));
 
 
-"""
-# The scale matrix and function calls for question 1
-#scale0 = [1920/size(img)[1] 0 0; 0 1080/size(img)[2] 0; 0 0 1];
-scale1 = [1920/size(plant)[1] 0 0; 0 1080/size(plant)[2] 0; 0 0 1];
-#scale2 = [1920/size(img2)[1] 0 0; 0 1080/size(img2)[2] 0; 0 0 1];
-#scaled = transform_image(img, scale0, "scale");
-scaled1 = transform_image(plant, scale1, "scale");
-#scaled2 = transform_image(img2, scale2, "scale");
-
-#The reflection matrix and function calls for question 2
-reflect = [-1 0 0; 0 1 0; 0 0 1];
-#reflected = transform_image(img, reflect, "reflect");
-reflected1 = transform_image(plant, reflect, "reflect");
-#reflected2 = transform_image(img2, reflect, "reflect");
-
-#The rotation matrix and function calls for question 3
-rotate = [cos(deg2rad(-30)) -sin(deg2rad(-30)) 0; sin(deg2rad(-30)) cos(deg2rad(-30)) 0; 0 0 1];
-#rotated = transform_image(img, rotate, "rotate");
-rotated1 = transform_image(plant, rotate, "rotate");
-#rotated2 = transform_image(img2, rotate, "rotate");
-
-#The Shear matrix and function calls for question 4
-#shear = [1 0 0; 0.5 1 0; 0 0 1];
-#shear = [0 1 0; 1 0.5 0; 0 0 1];
-shear = [1 0.5 0; 0 1 0; 0 0 1];
-#sheared = transform_image(img, shear, "shear");
-sheared1 = transform_image(plant, shear, "shear");
-#sheared2 = transform_image(img2, shear, "shear");
-
-#The scale, rotate, and translate matricies, followed by the function calls for question 5
-scale_half = [0.5 0 0; 0 0.5 0; 0 0 1];
-rotate20 = [cos(deg2rad(20)) -sin(deg2rad(20)) 0; sin(deg2rad(20)) cos(deg2rad(20)) 0; 0 0 1]
-translate = [1 0 300; 0 1 500; 0 0 1];
-#fived = transform_image(transform_image(transform_image(img, translate, "translate"), rotate20, "rotate"), scale_half, "scale");
-fived1 = transform_image(transform_image(transform_image(plant, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
-#fived2 = transform_image(transform_image(transform_image(img2, translate, "translate"), rotate20, "rotate"), scale_half, "scale_half");
-
-#The first affline matrix and function calls
-affine_1 = [1 .4 .4; .1 1 .3; 0 0 1];
-#affine_1d = transform_image(img, affine_1, "affine");
-affine_1_1d = transform_image(plant, affine_1, "affine");
-#affine_1_2d = transform_image(img2, affine_1, "affine");
-
-#The second affline matrix and function calls
-affine_2 = [2.1 -.35 -.1; -.3 .7 .3; 0 0 1];
-#affine_2d = transform_image(img, affine_2, "affine");
-affine_2_1d = transform_image(plant, affine_2, "affine");
-#affine_2_2d = transform_image(img2, affine_2, "affine");
-
-#The first homography matrix and function calls
-homography_1 = [.8 .2 .3; -.1 .9 -.1; .0005 -.0005 1];
-#homography_1d = transform_image(img, homography_1, "homography");
-homography_1_1d = transform_image(plant, homography_1, "homography");
-#homography_1_2d = transform_image(img2, homography_1, "homography");
-
-#The second homography matrix and function calls
-homography_2 = [29.25 13.95 20.25; 4.95 35.55 9.45; 0.045 0.09 45.0];
-#homography_2d = transform_image(img, homography_2, "homography");
-homography_2_1d = transform_image(plant, homography_2, "homography");
-#homography_2_2d = transform_image(img2, homography_2, "homography");
-
-#=
-#Creating plots for image 1
-scaled_plt = plot(scaled);
-reflected_plt = plot(reflected);
-rotated_plt = plot(rotated);
-sheared_plt = plot(sheared);
-fived_plt = plot(fived);
-affine_1d_plt = plot(affine_1d);
-affine_2d_plt = plot(affine_2d);
-homography_1d_plt = plot(homography_1d);
-homography_2d_plt = plot(homography_2d); 
-=#
-#Creating plots for image 2
-scaled1_plt = plot(scaled1, aspect_ratio=1);
-reflected1_plt = plot(reflected1, aspect_ratio=1);
-rotated1_plt = plot(rotated1, aspect_ratio=1);
-sheared1_plt = plot(sheared1, aspect_ratio=1);
-fived1_plt = plot(fived1, aspect_ratio=1);
-affine_1_1d_plt = plot(affine_1_1d, aspect_ratio=1);
-affine_2_1d_plt = plot(affine_2_1d, aspect_ratio=1);
-homography_1_1d_plt = plot(homography_1_1d, aspect_ratio=1);
-homography_2_1d_plt = plot(homography_2_1d, aspect_ratio=1);
-#=
-#creating plots for image 3
-scaled2_plt = plot(scaled2);
-reflected2_plt = plot(reflected2);
-rotated2_plt = plot(rotated2);
-sheared2_plt = plot(sheared2);
-fived2_plt = plot(fived2);
-affine_1_2d_plt = plot(affine_1_2d);
-affine_2_2d_plt = plot(affine_2_2d);
-homography_1_2d_plt = plot(homography_1_2d);
-homography_2_2d_plt = plot(homography_2_2d);
-=#
-
-#Displaying the image 1 plot
-#plt_fin = plot(scaled_plt, reflected_plt, rotated_plt, sheared_plt, fived_plt, affine_1d_plt, affine_2d_plt, homography_1d_plt, homography_2d_plt, layout=(3, 3), legend=true);
-#display(plt_fin);
-
-#Displaying the image 2 plot
-plt_fin1 = plot(scaled1_plt, reflected1_plt, rotated1_plt, sheared1_plt, fived1_plt, affine_1_1d_plt, affine_2_1d_plt, homography_1_1d_plt, homography_2_1d_plt, layout=(3, 3), legend=true);
-#display(plt_fin1);
-
-#Displaying the image 3 plot 
-#plt_fin2 = plot(scaled2_plt, reflected2_plt, rotated2_plt, sheared2_plt1, fived2_plt, affine_1_2d_plt, affine_2_2d_plt, homography_1_1d_plt, homography_2_1d_plt, layout=(3, 3), legend=true);
-#display(plt_fin1);
-
-#=
-rotate = [cos(deg2rad(3)) -sin(deg2rad(3)) 0; sin(deg2rad(3)) cos(deg2rad(3)) 0; 0 0 1];
-rotated = transform_image(img, rotate, "rotate");
-plt = plot(rotated);
-display(plt);
-=#
-"""
