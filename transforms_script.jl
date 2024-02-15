@@ -2,6 +2,34 @@ import Pkg
 Pkg.add(["Images", "FileIO", "ImageMagick", "ImageIO", "Plots", "Markdown", "Interpolations"])
 using Images, FileIO, ImageMagick, ImageIO, Plots, Markdown, Interpolations
 
+
+function bilinear_interpolate(image::Array{RGB{N0f8}, 2}, pos::Vector{Float64});
+  pos = pos .- 0.5;
+  pixels_pos = [[floor(pos[1]) ceil(pos[2])], [ceil(pos[1]) ceil(pos[2])], [floor(pos[1]) floor(pos[2])], [ceil(pos[1]) floor(pos[2])]];
+  pixels = [RGB(0, 0, 0), RGB(0, 0, 0), RGB(0, 0, 0), RGB(0, 0, 0)];
+  for i = 1:size(pixels)[1];
+    #if(pixels_pos[i][1] < 1 || pixels_pos[i][1] > size(image)[1] || pixels_pos[i][2] < 1 || pixels_pos[i][2] > size(image)[2])
+      #return RGB(0, 0, 0);
+    if(pixels_pos[i][1] < 1)
+      pixels_pos[i][1] = 1;
+    elseif(pixels_pos[i][2] < 1)
+      pixels_pos[i][2] = 1;
+    elseif(pixels_pos[i][1] > size(image)[1])
+      pixels_pos[i][1] = size(image)[1];
+    elseif(pixels_pos[i][2] > size(image)[2])
+      pixels_pos[i][2] = size(image)[2];
+    else
+      pixels[i] = image[Int(pixels_pos[i][1]), Int(pixels_pos[i][2])];
+    end
+  end
+
+  pos = pos - (floor.(pos));
+
+  pass_1 = pos[1] * pixels[2] + (1 - pos[1]) * pixels[1];
+  pass_2 = pos[1] * pixels[4] + (1 - pos[1]) * pixels[3];
+  pos[2] * pass_1 + (1 - pos[2]) * pass_2
+end
+
 """
 transform_image(input_image, transform_matrix, transform_type)
 
@@ -64,8 +92,7 @@ function transform_image(input_image, transform_matrix, transform_type)
 
   result = rand(RGB{N0f8}, round(Int, floor(display_size[1])), round(Int, floor(display_size[2]))); 
 
-  #=
-  inverse = transform_matrix;
+   #= inverse = transform_matrix;
   if transform_type == "translate"
     transform_matrix[1,3] *= -1
     transform_matrix[2,3] *= -1
@@ -82,8 +109,8 @@ function transform_image(input_image, transform_matrix, transform_type)
     inverse = transform_matrix
   else
   inverse = inv(transform_matrix); 
-  end=#
-
+  end =#
+  
   inverse = inv(transform_matrix);
 
   for i = 1:size(result, 1)
@@ -97,11 +124,7 @@ function transform_image(input_image, transform_matrix, transform_type)
       if sample_pos[1] <= 0 || sample_pos[1] > size(input_image, 1) || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
         result[i, j] = RGB(0, 0, 0);
       else
-        sample_pos = [(ceil(a)) for a in sample_pos];
-        sample_pos = Int.(sample_pos);
-        #itp = interpolate(input_image, BSpline(Linear()));
-        #result[i, j] = itp(sample_pos[1], sample_pos[2]...);
-        result[i, j] = input_image[sample_pos[1], sample_pos[2]];
+        result[i, j] = bilinear_interpolate(input_image, [sample_pos[1], sample_pos[2]]);
       end
     end
   end
@@ -119,7 +142,9 @@ function transform_image(input_image, transform_matrix, transform_type)
       if sample_pos[1] <= 0 || sample_pos[1] > size(input_image)[1] || sample_pos[2] <= 0 || sample_pos[2] > size(input_image)[2]
         result[i, j] = RGB(0, 0, 0);
       else
-        sample_pos = [ceil(a) for a in sample_pos];
+        #result[i, j] = bilinear_interpolate(input_image, sample_pos);
+
+        sample_pos = [ceil(x) for x in sample_pos];
         sample_pos = Int.(sample_pos);
         result[i, j] = input_image[sample_pos[1], sample_pos[2]];
       end
@@ -129,25 +154,56 @@ function transform_image(input_image, transform_matrix, transform_type)
   result
 end
 
-img = load("image3.jpg");
-img1 = load("image1.png");
-img2 = load("image2.png");
+meech = load("image3.jpg");
+plant = load("image1.png");
+room = load("image2.png");
 
-scale0 = [1920/size(img)[1] 0 0; 0 1080/size(img)[2] 0; 0 0 1];
-scale1 = [1920/size(img1)[1] 0 0; 0 1080/size(img1)[2] 0; 0 0 1];
-scale2 = [1920/size(img2)[1] 0 0; 0 1080/size(img2)[2] 0; 0 0 1];
+scale_meech = [1920/size(meech)[2] 0 0; 0 1080/size(meech)[1] 0; 0 0 1];
+scale_plant = [1920/size(plant)[2] 0 0; 0 1080/size(plant)[1] 0; 0 0 1];
+scale_room = [1920/size(room)[2] 0 0; 0 1080/size(room)[1] 0; 0 0 1];
 reflect = [-1 0 0; 0 1 0; 0 0 1];
-rotate = [cos(deg2rad(-30)) -sin(deg2rad(-30)) 0; sin(deg2rad(-30)) cos(deg2rad(-30)) 0; 0 0 1];
+rotate30 = [cos(deg2rad(30)) -sin(deg2rad(30)) 0; sin(deg2rad(30)) cos(deg2rad(30)) 0; 0 0 1];
 shear = [1 0.5 0; 0 1 0; 0 0 1];
 scale_half = [0.5 0 0; 0 0.5 0; 0 0 1];
-rotate20 = [cos(deg2rad(20)) -sin(deg2rad(20)) 0; sin(deg2rad(20)) cos(deg2rad(20)) 0; 0 0 1]
+rotate20 = [cos(deg2rad(-20)) -sin(deg2rad(-20)) 0; sin(deg2rad(-20)) cos(deg2rad(-20)) 0; 0 0 1]
 translate = [1 0 300; 0 1 500; 0 0 1];
 affine_1 = [1 .4 .4; .1 1 .3; 0 0 1];
 affine_2 = [2.1 -.35 -.1; -.3 .7 .3; 0 0 1];
 homography_1 = [.8 .2 .3; -.1 .9 -.1; .0005 -.0005 1];
 homography_2 = [29.25 13.95 20.25; 4.95 35.55 9.45; 0.045 0.09 45.0];
 
+save("meech1.png", transform_image(meech, scale_meech, "scale"));
+save("meech2.png", transform_image(meech, reflect, "reflect"));
+save("meech3.png", transform_image(meech, rotate30, "rotate"));
+save("meech4.png", transform_image(meech, shear, "shear"));
+save("meech5.png", transform_image(transform_image(transform_image(meech, translate, "translate"), rotate20, "rotate"), scale_half, "scale"));
+save("meech6-1.png", transform_image(meech, affine_1, "affine"));
+save("meech6-2.png", transform_image(meech, affine_2, "affine"));
+save("meech7-1.png", transform_image(meech, homography_1, "homography"));
+save("meech7-2.png", transform_image(meech, homography_2, "homography"));
 
+save("plant1.png", transform_image(plant, scale_plant, "scale"));
+save("plant2.png", transform_image(plant, reflect, "reflect"));
+save("plant3.png", transform_image(plant, rotate30, "rotate"));
+save("plant4.png", transform_image(plant, shear, "shear"));
+save("plant5.png", transform_image(transform_image(transform_image(plant, translate, "translate"), rotate20, "rotate"), scale_half, "scale"));
+save("plant6-1.png", transform_image(plant, affine_1, "affine"));
+save("plant6-2.png", transform_image(plant, affine_2, "affine"));
+save("plant7-1.png", transform_image(plant, homography_1, "homography"));
+save("plant7-2.png", transform_image(plant, homography_2, "homography"));
+
+save("room1.png", transform_image(room, scale_room, "scale"));
+save("room2.png", transform_image(room, reflect, "reflect"));
+save("room3.png", transform_image(room, rotate30, "rotate"));
+save("room4.png", transform_image(room, shear, "shear"));
+save("room5.png", transform_image(transform_image(transform_image(room, translate, "translate"), rotate20, "rotate"), scale_half, "scale"));
+save("room6-1.png", transform_image(room, affine_1, "affine"));
+save("room6-2.png", transform_image(room, affine_2, "affine"));
+save("room7-1.png", transform_image(room, homography_1, "homography"));
+save("room7-2.png", transform_image(room, homography_2, "homography"));
+
+
+"""
 # The scale matrix and function calls for question 1
 scale0 = [1920/size(img)[1] 0 0; 0 1080/size(img)[2] 0; 0 0 1];
 scale1 = [1920/size(img1)[1] 0 0; 0 1080/size(img1)[2] 0; 0 0 1];
@@ -261,3 +317,5 @@ rotated = transform_image(img, rotate, "rotate");
 plt = plot(rotated);
 display(plt);
 =#
+"""
+
