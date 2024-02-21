@@ -21,6 +21,7 @@ matchedPoints2 = points2( indexPairs( :,2 ) );
 im1_points = matchedPoints1.Location;
 im2_points = matchedPoints2.Location ;
 
+
 %% Part 3
 function A=estimateTransform( im1_points, im2_points )
 
