@@ -1,0 +1,69 @@
+im1 = imread("Image1.jpg");
+im2 = imread("Image2.jpg");
+
+im1 = rgb2gray(im1);
+im1 = im2double(im1);
+
+im2 = rgb2gray(im2);
+im2 = im2double(im2);
+
+points1 = detectSURFFeatures( im1 );
+features1 = extractFeatures( im1,points1 );
+
+points2 = detectSURFFeatures( im2 );
+features2 = extractFeatures( im2,points2 );
+
+indexPairs = matchFeatures( features1, features2, "Unique", true );
+
+matchedPoints1 = points1( indexPairs( :,1 ) );
+matchedPoints2 = points2( indexPairs( :,2 ) );
+
+im1_points = matchedPoints1.Location;
+im2_points = matchedPoints2.Location ;
+
+
+%% Part 3
+function A=estimateTransform( im1_points, im2_points )
+
+
+end
+
+function Est =estimateTransformRansac( im1_points, im2_points )
+    Nransac = 10000;
+
+    n = size(im1_points, 1);
+
+    k = 4;
+
+    nbest = 0;
+    Abest = [];
+    idxbest = [];
+
+    for i_ransac = 1:Nransac
+        idx = randperm(n, k);
+
+        pts1i = im1_points(idx, :);
+        pts2i = im2_points(idx, :);
+
+        A_test = estimateTransform(pts1i, pts2i);
+
+        pts2estim = A*[im1_points';ones(1,n)];
+        pts2estim = pts2estim(1:2,:)./pts2estim(3,:);
+        pts2estim = pts2estim';
+        d = sqrt(( pts2estim(:,1) -im2_points(:,1)).^2 + ( pts2estim(:,2) -im2_points(:,2)).^2);
+
+        idxgood = d < t;
+        ngood = sum(idxgood);
+        Agood = A;
+
+        if ngood > nbest;
+            nbest = ngood;
+            Abest = Agood;
+            idxbest = idxgood;
+        end
+    end
+    pts1inliers = im1_points(idxbest,:)
+    pts2inliers = im2_points(idxbest,:)
+
+    A_inliners = estimateTransform(pts1inliers, pts2inliers); 
+end
