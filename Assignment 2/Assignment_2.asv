@@ -28,7 +28,9 @@ im2_points = matchedPoints2.Location ;
 
 a = estimateTransform(im1_points, im2_points);
 a1 = estimateTransformRANSAC(im1_points, im2_points);
+
 im2_transformed = transform_Image( im2, inv(a1), "homography");
+
 nanlocations = isnan( im2_transformed );
 im2_transformed( nanlocations )=0;
 
@@ -36,6 +38,21 @@ imshow(im2_transformed);
 
 im1_expanded = zeros(size(im2_transformed));
 im1_expanded(1:size(im1, 1), 1:size(im1, 2)) = im1;
+
+imshow(im1_expanded);
+
+[x_overlap,y_overlap]=ginput(2);
+
+overlapleft=round(x_overlap(1));
+overlapright=round(x_overlap(2));
+
+ramp = zeros(1, size(im1_expanded,2));
+ramp(1, overlapright:end) = ones(1, size(im1_expanded,2)-overlapright+1);
+rangesize = overlapright-overlapleft;
+ramp(1,overlapleft:overlapright) = 0:1/rangesize:1;
+plot(ramp);
+
+im2_blend = im2_transformed .* repmat( ramp,si,1 );
 
 %% Estimate Transform
 function A = estimateTransform( im1_points, im2_points )
