@@ -1,6 +1,6 @@
 function Transform_Image = transform_Image( input_image, transform_matrix, transform_type )
     input_image = im2double(input_image);
-    input_image = rgb2gray(input_image);
+    input_image = im2gray(input_image);
 
     [h,w] = size(input_image);
     corners = [1 w w 1; 1 1 h h; 1 1 1 1];
@@ -53,4 +53,5 @@ function Transform_Image = transform_Image( input_image, transform_matrix, trans
     y = reshape( y', display_size(2), display_size(1));
 
     Transform_Image = interp2( input_image, x, y );
+   
 end

@@ -1,3 +1,4 @@
+open transform_Image.m
 im1 = imread("Image1.jpg");
 im2 = imread("Image2.jpg");
 
@@ -22,10 +23,22 @@ im1_points = matchedPoints1.Location;
 im2_points = matchedPoints2.Location ;
 
 
-test1 = [1373 1204; 1841 1102; 1733 1213; 2099 1297];
-test2 = [182 1160; 728 1055; 617 1172; 1001 1247];
-a = estimateTransform(test1, test2);
-a1 = estimateTransformRANSAC(test1, test2);
+%test1 = [1373 1204; 1841 1102; 1733 1213; 2099 1297];
+%test2 = [182 1160; 728 1055; 617 1172; 1001 1247];
+
+a = estimateTransform(im1_points, im2_points);
+a1 = estimateTransformRANSAC(im1_points, im2_points);
+im2_transformed = transform_Image( im2, inv(a1), "homography");
+nanlocations = isnan( im2_transformed );
+im2_transformed( nanlocations )=0;
+
+imshow(im2_transformed);
+
+im1_expanded = zeros(size(im2_transformed));
+im1_expanded(1:size(im1, 1), 1:size(im1, 2)) = im1;
+
+imshow(im1_expanded);
+
 %% Estimate Transform
 function A = estimateTransform( im1_points, im2_points )
 P = zeros(size(im1_points, 1), 9);
@@ -43,7 +56,7 @@ end
 q = V(:,end);
 
 
-A = [q(1) q(2) q(3); q(4) q(5) q(6); q(7) q(8) q(9)]
+A = [q(1) q(2) q(3); q(4) q(5) q(6); q(7) q(8) q(9)];
 
 end
 
