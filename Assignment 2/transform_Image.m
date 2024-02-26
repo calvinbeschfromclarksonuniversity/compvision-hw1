@@ -49,8 +49,8 @@ function Transform_Image = transform_Image( input_image, transform_matrix, trans
     x = sample_pos(1,:)./sample_pos(3,:);
     y = sample_pos(2,:)./sample_pos(3,:);
 
-    x = reshape( x', display_size(2), display_size(1));
-    y = reshape( y', display_size(2), display_size(1));
+   x = reshape( x', display_size(2), display_size(1));
+   y = reshape( y', display_size(2), display_size(1));
 
     Transform_Image = interp2( input_image, x, y );
     

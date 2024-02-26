@@ -52,24 +52,32 @@ imwrite(im2_transformed,"image2Translate.png");
 im1_expanded = zeros(size(im2_transformed));
 im1_expanded(1:size(im1, 1), 1:size(im1, 2)) = im1;
 
+%displaying and writing im1_expanded
 imshow(im1_expanded);
+imwrite(im1_expanded,"image1expanded.png");
 
-
+%obtaining the ramp parameters
 [x_overlap,y_overlap]=ginput(2);
 
+%setting each side of the ramp overlap
 overlapleft=round(x_overlap(1));
 overlapright=round(x_overlap(2));
 
+%creating the ramp 
 ramp = zeros(1, size(im1_expanded,2));
 ramp(1, overlapright:end) = ones(1, size(im1_expanded,2)-overlapright+1);
 rangesize = overlapright-overlapleft;
 ramp(1,overlapleft:overlapright) = 0:1/rangesize:1;
 plot(ramp);
 
+%applying the ramp to each image
 im2_blend = im2_transformed .* repmat( ramp,size(im2_transformed,1),1 );
 im1_blend = im1_expanded .* repmat( 1-ramp,size(im1_expanded,1),1 );
+
+%combining the two images, and displaying and saving the resulting panorama
 panorama = im2_blend+ im1_blend;
 imshow(panorama);
+imwrite(panorama,"panorama.png");
 
 %% Estimate Transform
 function A = estimateTransform( im1_points, im2_points )
