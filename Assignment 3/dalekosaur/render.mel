@@ -1,0 +1,61 @@
+string $basedir="/Users/nkholgad/Univ/Courses/ComputerVision/Assignments/Assignment3_CameraCalibration/Files/dalekosaur/";
+string $transformsfile=$basedir+"transform.txt";
+file -import -type "OBJ" -ra true -mergeNamespacesOnClash false -namespace "object" -options "mo=0;lo=0"  -pr "/Users/nkholgad/Univ/Courses/ComputerVision/Assignments/Assignment3_CameraCalibration/Files/dalekosaur/dalekosaur.obj";
+select -r object:polySurface1;
+xform -cp;
+$rotPiv=`xform -q -ws -rp`;
+float $transx=-1.0*$rotPiv[0];
+float $transy=-1.0*$rotPiv[1];
+float $transz=-1.0*$rotPiv[2];
+setAttr "object:polySurface1.translateX" $transx;
+setAttr "object:polySurface1.translateY" $transy;
+setAttr "object:polySurface1.translateZ" $transz;
+select -r persp ;
+setAttr "persp.translateX" 0;
+setAttr "persp.translateY" 0;
+setAttr "persp.translateZ" 22.001501;
+setAttr "persp.rotateX" 0;
+setAttr "persp.rotateY" 0;
+setAttr "persp.rotateZ" 0;
+setAttr "perspShape.backgroundColor" -type double3 0.300000 0.300000 0.300000;
+select -r object:polySurface1;
+int $i_el=0;
+int $el_step=15;
+int $i_az=0;
+int $az_step=10;
+float $az=0.0;
+float $el=0.0;
+int $i_ip=0;
+int $ip_step=20;
+float $ip=0.0;
+string $printstring;
+int $ctime=0;
+string $transtring;
+$fid=`fopen $transformsfile "w"`;
+for ($i_el=-6; $i_el<7; $i_el=$i_el+1) {
+for ($i_ip=-1; $i_ip<2; $i_ip=$i_ip+1) {
+	for ($i_az=0; $i_az<36; $i_az=$i_az+1) {
+	    $ctime=$ctime+1;
+	    currentTime($ctime);
+		$el=1.0*$i_el*$el_step;
+		$ip=1.0*$i_ip*$ip_step;
+		$az=1.0*$i_az*$az_step;
+		rotate -os 0 0 0;
+		rotate -r -os $el 0 0;
+		rotate -r -os 0 $az 0;
+		rotate -r -ws 0 0 $ip;
+		setKeyframe -attribute rotateX;
+		setKeyframe -attribute rotateY;
+		setKeyframe -attribute rotateZ;
+      $tr=`xform -q -m`;
+      $transtring=$tr[0]+" "+$tr[1]+" "+$tr[2]+" "+$tr[3]+" "+$tr[4]+" "+$tr[5]+" "+$tr[6]+" "+$tr[7]+" "+$tr[8]+" "+$tr[9]+" "+$tr[10]+" "+$tr[11]+" "+$tr[12]+" "+$tr[13]+" "+$tr[14]+" "+$tr[15]+"\n";
+      fprint $fid $transtring;
+		$printstring="Done with "+$ctime+"\n";
+		print($printstring);
+	}	
+}
+}
+fclose $fid;
+string $scenefile=$basedir+"scene.mb";
+file -rename $scenefile;
+file -save;
