@@ -1,8 +1,11 @@
 open transform_Image.m
+%cheese = Panorama ("image1.jpg","image2.jpg"); 
+
+%function pano = Panorama(image1, image2)
 
 %reading images in and converting to greyscale
-im1 = imread("Image1.jpg");
-im2 = imread("Image2.jpg");
+im1 = imread("image1.jpg");
+im2 = imread("image2.jpg");
 
 im1 = rgb2gray(im1);
 im1 = im2double(im1);
@@ -35,8 +38,13 @@ test2 = [182 1160; 728 1055; 617 1172; 1001 1247];
 a = estimateTransform(test1, test2);
 
 %Calling the ransac function to return the transformation matrix
-a1 = estimateTransformRANSAC(im1_points, im2_points);
+[a1,im1_points_inlier,im2_points_inlier] = estimateTransformRANSAC(im1_points, im2_points);
+% plot the correspondence of all the inliers
 
+figure(3)
+showMatchedFeatures(im1, im2, im1_points_inlier, im2_points_inlier, "montage")
+title("Refined matching points (by RANSAC), only inliers")
+%% new
 %applying the transformation
 im2_transformed = transform_Image( im2, inv(a1), "homography");
 
@@ -53,9 +61,11 @@ im1_expanded = zeros(size(im2_transformed));
 im1_expanded(1:size(im1, 1), 1:size(im1, 2)) = im1;
 
 %displaying and writing im1_expanded
-imshow(im1_expanded);
-imwrite(im1_expanded,"image1expanded.png");
 
+imwrite(im1_expanded,"image1expanded.png");
+imshow(im1_expanded);
+
+%image 1 ramp
 %obtaining the ramp parameters
 [x_overlap,y_overlap]=ginput(2);
 
@@ -63,22 +73,42 @@ imwrite(im1_expanded,"image1expanded.png");
 overlapleft=round(x_overlap(1));
 overlapright=round(x_overlap(2));
 
-%creating the ramp 
-ramp = zeros(1, size(im1_expanded,2));
-ramp(1, overlapright:end) = ones(1, size(im1_expanded,2)-overlapright+1);
-rangesize = overlapright-overlapleft;
-ramp(1,overlapleft:overlapright) = 0:1/rangesize:1;
-plot(ramp);
+%creating the ramp for image 1
+zeros_till_overlapright = zeros(size(im1_expanded,2)-overlapright -1,1);
+ones_till_overlapleft = ones(overlapleft, 1);
+stepvalue = 1/(overlapleft-overlapright);
+ramp1 = [ones_till_overlapleft', 1:stepvalue:0, zeros_till_overlapright'];
 
-%applying the ramp to each image
-im2_blend = im2_transformed .* repmat( ramp,size(im2_transformed,1),1 );
-im1_blend = im1_expanded .* repmat( 1-ramp,size(im1_expanded,1),1 );
+im1_blend = im1_expanded .* ramp1;
+
+imshow(im1_blend);
+imwrite(im1_blend,"im1_blend.png");
+
+imshow(im2_transformed);
+%image 2 ramp
+[x_overlap,y_overlap]=ginput(2);
+
+%setting each side of the ramp overlap
+overlapleft2=round(x_overlap(1));
+overlapright2=round(x_overlap(2));
+stepvalue2 = 1/(overlapright2-overlapleft2);
+ones_till_overlapright = ones(size(im2_transformed,2)-overlapright2 -1,1);
+zeros_till_overlapleft = zeros(overlapleft2, 1);
+
+ramp2 = [zeros_till_overlapleft', 0:stepvalue2:1 ,  ones_till_overlapright'];
+
+im2_blend = im2_transformed .* ramp2;
+imshow(im2_blend);
+imwrite(im2_blend,"im2_blend.png");
 
 %combining the two images, and displaying and saving the resulting panorama
 panorama = im2_blend+ im1_blend;
+
+imwrite(im2_blend,"im2_blend.png");
+pano = panorama;
 imshow(panorama);
 imwrite(panorama,"panorama.png");
-
+%end
 %% Estimate Transform
 function A = estimateTransform( im1_points, im2_points )
 
@@ -107,13 +137,13 @@ A = [q(1) q(2) q(3); q(4) q(5) q(6); q(7) q(8) q(9)];
 end
 
 %% Ransac
-function A_rans = estimateTransformRANSAC(im1_points, im2_points)
+function [A_rans, pts1inliers,pts2inliers]= estimateTransformRANSAC(im1_points, im2_points)
 
 %number of cycles
 Nransac = 10000;
 
 %threshold for ideal values
-t = 4;
+t = 2;
 
 %how many possible points
 n = size(im1_points,1);
