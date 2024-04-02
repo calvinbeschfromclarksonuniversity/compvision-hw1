@@ -41,9 +41,9 @@ a = estimateTransform(test1, test2);
 [a1,im1_points_inlier,im2_points_inlier] = estimateTransformRANSAC(im1_points, im2_points);
 % plot the correspondence of all the inliers
 
-figure(3)
-showMatchedFeatures(im1, im2, im1_points_inlier, im2_points_inlier, "montage")
-title("Refined matching points (by RANSAC), only inliers")
+%figure(3)
+%showMatchedFeatures(im1, im2, im1_points_inlier, im2_points_inlier, "montage")
+%title("Refined matching points (by RANSAC), only inliers")
 %% new
 %applying the transformation
 im2_transformed = transform_Image( im2, inv(a1), "homography");

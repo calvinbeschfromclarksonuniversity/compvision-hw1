@@ -7,8 +7,6 @@ xlabel('Xo-axis'); ylabel('Yo-axis'); zlabel('Zo-axis');
 
 ObjectDirectory = 'dalekosaur';
 InputImage = imread("InputImage1.jpg");
-InputImage = rgb2gray(InputImage);
-InputImage = im2double(InputImage);
 
   
 [impoints2D, objpoints3D] = clickPoints( InputImage, ObjectDirectory );
