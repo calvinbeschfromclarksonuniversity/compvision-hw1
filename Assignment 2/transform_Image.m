@@ -7,20 +7,21 @@ function Transform_Image = transform_Image( input_image, transform_matrix, trans
 
     corners = transform_matrix * corners;
     
-    corners = [ceil(corners(1,:)./corners(3,:)); ceil(corners(2,:)./corners(3,:))];
+    xlocations = round(corners(1,:)./corners(3,:));
+    ylocations = round(corners(2,:)./corners(3,:));
 
 
-    xmin = min([1, corners(1,:)]);
-    xmax = max(corners(1,:));
+    xmin = 1;
+    xmax = max(xlocations);
 
-    ymin = min([1, corners(2,:)]);
-    ymax = max(corners(2,:));
+    ymin = 1;
+    ymax = max(ylocations);
 
     display_size = [xmax - xmin + 1, ymax - ymin + 1];
 
     [X,Y] = meshgrid( xmin:xmax, ymin:ymax );
     coords = [X(:)';Y(:)';];
-    coords = [coords(1,:);coords(2,:);ones(1, size(coords,2));];
+    coords = [coords(1,:);coords(2,:);ones(1, display_size(1)*display_size(2));];
 
     if (strcmp(transform_type, "translate"))
         inverse = transform_matrix;

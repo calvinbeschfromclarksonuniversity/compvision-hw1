@@ -10,9 +10,9 @@ InputImage = imread("InputImage1.jpg");
 
   
 [impoints2D, objpoints3D] = clickPoints( InputImage, ObjectDirectory );
-
+%% New section
 figure;
-imshow(I); hold on;
+imshow(InputImage); hold on;
 plot( impoints2D(:,1), impoints2D(:,2), 'b.');
 
 figure;
