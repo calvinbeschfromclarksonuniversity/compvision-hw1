@@ -1,3 +1,4 @@
+open estimate_transform.m
 load dalekosaur/object.mat
 
 patch('vertices', Xo', 'faces', Faces, 'facecolor', 'w', 'edgecolor', 'k');

@@ -1,7 +1,7 @@
 open transform_Image.m
 
 %% Estimate Transform
-function A = estimateTransform( im1_points, im2_points )
+function A = estimateCameraProjectionMatrix( im1_points, im2_points )
 
 %creating matrix 
 P = zeros(size(im1_points, 1), 9);
