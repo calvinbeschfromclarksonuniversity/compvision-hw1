@@ -1,11 +1,8 @@
 open transform_Image.m
-%cheese = Panorama ("image1.jpg","image2.jpg"); 
-
-%function pano = Panorama(image1, image2)
 
 %reading images in and converting to greyscale
-im1 = imread("image1.jpg");
-im2 = imread("image2.jpg");
+im1 = imread("IMG_6860.jpg");
+im2 = imread("IMG_6861.jpg");
 
 im1 = rgb2gray(im1);
 im1 = im2double(im1);
