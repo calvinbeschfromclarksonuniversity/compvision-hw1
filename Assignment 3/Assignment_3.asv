@@ -22,5 +22,4 @@ axis equal;
 plot3( objpoints3D(:,1), objpoints3D(:,2), objpoints3D(:,3), 'b.' );
 
 
-%% Estimate camera projection matrix M
-M = estimateCameraProjectionMatrix(impoints2D, objpoints3D);
+%% Estimate camera pro
