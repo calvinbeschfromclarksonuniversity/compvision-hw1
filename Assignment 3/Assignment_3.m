@@ -22,20 +22,57 @@ axis equal;
 plot3( objpoints3D(:,1), objpoints3D(:,2), objpoints3D(:,3), 'b.' );
 
 
-%% Estimate camera projection matrix M
+%% Estimate camera projection matrix M, estimate K,R,t
 M = estimateCameraProjectionMatrix(impoints2D, objpoints3D);
+
+A = M(:, 1:3);
+b = M(:, 4);
+C = A*transpose(A);
+
+lambda = 1 / sqrt(C(3,3));
+lambdasq = lambda * lambda;
+xc = lambdasq * C(1, 3);
+yc = lambdasq * C(2, 3);
+
+fy = sqrt(abs(lambdasq*C(2,2) - yc.^2));
+alpha = (1 / fy)*((xc.^2)*C(1,2) - xc*yc);
+fx = sqrt(abs(lambdasq * C(1,1) - alpha.^2 - xc.^2));
+
+K = [fx alpha xc; 0 fy yc; 0 0 1];
+
+R = transpose(K) * A / sqrt(C(3,3));
+if det(R) ~= 1
+    R = -R;
+    lambda = -lambda;
+end
+t = lambda * transpose(K) * b;
+
+%% Verify
+
+estim = zeros(size(impoints2D, 1), 2);
+for i = 1:(size(estim, 1))
+    homog = M * [objpoints3D(i,1); objpoints3D(i,2); objpoints3D(i,3); 1];
+    estim(i, :) = homog(1:2) ./ homog(3);
+end
+
+imshow("InputImage1.png");
+hold on;c
+
+plot(estim(:, 1), estim(:, 2), 'ro', 'MarkerSize', 10)
+
+hold off;
 
 
 %% Estimate Transform
-function A = estimateCameraProjectionMatrix( im1_points, im2_points )
+function A = estimateCameraProjectionMatrix( im_points, obj_points )
 
 %creating matrix 
-P = zeros(size(im1_points, 1), 9);
+P = zeros(size(im_points, 1) * 2, 11);
 
 %filling matrix with values of points derived via linear equations. 
-for i = 1:(size(im1_points))
-    P(i*2 - 1, :) = [-1*im1_points(i, 1) -1*im1_points(i, 2) -1 0 0 0 im1_points(i, 1)*im2_points(i, 1) im1_points(i, 2)*im2_points(i, 1) im2_points(i, 1)];
-    P(i*2, :) = [0 0 0 -1*im1_points(i, 1) -1*im1_points(i, 2) -1 im1_points(i, 1)*im2_points(i, 2) im1_points(i, 2)*im2_points(i, 2) im2_points(i, 2)];
+for i = 1:(size(im_points, 1))
+    P(i*2 - 1, :) = [-obj_points(i, 1) -obj_points(i, 2) -obj_points(i, 3) -1 0 0 0 0 im_points(i, 1)*obj_points(i,1) im_points(i, 1)*obj_points(i,2) im_points(i,1)*obj_points(i,3)];
+    P(i*2, :) = [0 0 0 0 -obj_points(i, 1) -obj_points(i, 2) -obj_points(i, 3) -1 im_points(i, 2)*obj_points(i, 1) im_points(i, 2)*obj_points(i,2) im_points(i,2)*obj_points(i,3)];
 end
 
 
@@ -49,7 +86,7 @@ end
 q = V(:,end);
 
 %returning homography values
-A = [q(1) q(2) q(3); q(4) q(5) q(6); q(7) q(8) q(9)];
+A = [q(1) q(2) q(3) q(4); q(5) q(6) q(7) q(8); q(9) q(10) q(11) 1];
 
 end
 
