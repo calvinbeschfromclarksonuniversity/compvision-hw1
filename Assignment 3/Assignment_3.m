@@ -56,7 +56,7 @@ for i = 1:(size(estim, 1))
 end
 
 imshow("InputImage1.png");
-hold on;c
+hold on;
 
 plot(estim(:, 1), estim(:, 2), 'ro', 'MarkerSize', 10)
 
@@ -68,28 +68,22 @@ function A = estimateCameraProjectionMatrix( im_points, obj_points )
 
 %creating matrix 
 P = zeros(size(im_points, 1) * 2, 11);
-
+r = zeros(1, 2*size(im_points, 1));
 %filling matrix with values of points derived via linear equations. 
 for i = 1:(size(im_points, 1))
     P(i*2 - 1, :) = [-obj_points(i, 1) -obj_points(i, 2) -obj_points(i, 3) -1 0 0 0 0 im_points(i, 1)*obj_points(i,1) im_points(i, 1)*obj_points(i,2) im_points(i,1)*obj_points(i,3)];
     P(i*2, :) = [0 0 0 0 -obj_points(i, 1) -obj_points(i, 2) -obj_points(i, 3) -1 im_points(i, 2)*obj_points(i, 1) im_points(i, 2)*obj_points(i,2) im_points(i,2)*obj_points(i,3)];
+    r(2*i-1) = -im_points(i, 1);
+    r(2*i) = -im_points(i, 2);
+
 end
 
-
-%using SVD to find best fit homography 
-if size(P,1) == 8
-    [U,S,V] = svd(P);
-else
-    [U,S,V] = svd(P,'econ');
-end
-
-q = V(:,end);
+q = inv(P'*P)*P'*r';
+q(12, 1) = 1;
 
 %returning homography values
-A = [q(1) q(2) q(3) q(4); q(5) q(6) q(7) q(8); q(9) q(10) q(11) 1];
-
+A = (reshape(q, 4, 3))';
 end
-
 
 function Transform_Image = transform_Image( input_image, transform_matrix, transform_type )
     input_image = im2double(input_image);
