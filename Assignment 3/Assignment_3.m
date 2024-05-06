@@ -120,7 +120,46 @@ undistortedImage = undistortImage(originalImage, cameraParams);
 % showdemo('StructureFromMotionExample')
 
 %% Part 3
+obj_orig = transpose(objpoints3D);
+[rows, cols] = size(Xo);
+obj_orig_homog = [Xo; ones(1, cols)];
 
+objA = [1 0 0 0; 0 .866 -.5 0; 0 .5 .866 0; 0 0 0 1] * obj_orig_homog;
+objB = [-.788 .378 -.484 .2; 0 -.788 -.625 .2; -.615 -.484 .621 .8; 0 0 0 1] * obj_orig_homog;
+objC = [-.076 -.899 .432 .8; -.156 -.438 .885 .5; -.985 0 -.174 .3; 0 0 0 1] * obj_orig_homog;
+
+objA_proj = M * objA;
+objB_proj = M * objB;
+objC_proj = M * objC;
+
+projAnorm = normalize(objA_proj);
+projBnorm = normalize(objB_proj);
+projCnorm = normalize(objC_proj);
+
+
+% Rt = [R t];
+% M2 = cameraParams.K * Rt;
+%
+% objD_proj = M2 * objA;
+% objE_proj = M2 * objB;
+% objF_proj = M2 * objC;
+%
+% projDnorm = normalize(objD_proj);
+% projEnorm = normalize(objE_proj);
+% projFnorm = normalize(objP_proj);
+
+hold on;
+patch(projAnorm(1, :), projAnorm(2, :), 'r');
+hold off;
+
+
+function H = normalize(homog_coords)
+H = zeros(2, size(homog_coords, 2));
+for i = 1:(size(homog_coords, 2))
+    H(1, i) = homog_coords(1, i) / homog_coords(3, i);
+    H(2, i) = homog_coords(2, i) / homog_coords(3, i);
+end
+end
 
 %% Estimate Transform
 function A = estimateCameraProjectionMatrix( im_points, obj_points )
